@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, SunCloud } from "lucide-react";
+import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, CloudSun } from "lucide-react";
 
 export default function Home() {
   const [city, setCity] = useState("");
@@ -12,7 +12,7 @@ export default function Home() {
 
   const getWeatherDetails = (code: number) => {
     if (code === 0) return { label: "Clear Sky", icon: <Sun className="w-8 h-8 text-amber-400 mx-auto" /> };
-    if (code >= 1 && code <= 3) return { label: "Partly Cloudy", icon: <SunCloud className="w-8 h-8 text-slate-300 mx-auto" /> };
+    if (code >= 1 && code <= 3) return { label: "Partly Cloudy", icon: <CloudSun className="w-8 h-8 text-slate-300 mx-auto" /> };
     if (code >= 45 && code <= 48) return { label: "Foggy", icon: <Cloud className="w-8 h-8 text-slate-400 mx-auto" /> };
     if (code >= 51 && code <= 67) return { label: "Rainy", icon: <CloudRain className="w-8 h-8 text-sky-400 mx-auto" /> };
     if (code >= 71 && code <= 77) return { label: "Snowy", icon: <CloudSnow className="w-8 h-8 text-indigo-200 mx-auto" /> };
