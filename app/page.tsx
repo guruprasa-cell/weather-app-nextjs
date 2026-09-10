@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, SunCloud } from "lucide-react";
 
 export default function Home() {
   const [city, setCity] = useState("");
@@ -8,6 +9,17 @@ export default function Home() {
   const [forecast, setForecast] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const getWeatherDetails = (code: number) => {
+    if (code === 0) return { label: "Clear Sky", icon: <Sun className="w-8 h-8 text-amber-400 mx-auto" /> };
+    if (code >= 1 && code <= 3) return { label: "Partly Cloudy", icon: <SunCloud className="w-8 h-8 text-slate-300 mx-auto" /> };
+    if (code >= 45 && code <= 48) return { label: "Foggy", icon: <Cloud className="w-8 h-8 text-slate-400 mx-auto" /> };
+    if (code >= 51 && code <= 67) return { label: "Rainy", icon: <CloudRain className="w-8 h-8 text-sky-400 mx-auto" /> };
+    if (code >= 71 && code <= 77) return { label: "Snowy", icon: <CloudSnow className="w-8 h-8 text-indigo-200 mx-auto" /> };
+    if (code >= 80 && code <= 82) return { label: "Showers", icon: <CloudRain className="w-8 h-8 text-sky-400 mx-auto" /> };
+    if (code >= 95) return { label: "Thunderstorm", icon: <CloudLightning className="w-8 h-8 text-yellow-400 mx-auto" /> };
+    return { label: "Cloudy", icon: <Cloud className="w-8 h-8 text-slate-300 mx-auto" /> };
+  };
 
   const normalizeCityName = (inputName: string) => {
     const nameMap: Record<string, string> = {
@@ -55,10 +67,11 @@ export default function Home() {
       const location = indianMatch || geoData.results[0];
       const { latitude, longitude, name, admin1, country } = location;
 
-      // Fetch both current weather and 5-day daily forecast
-      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
       const weatherRes = await fetch(weatherUrl);
       const weatherData = await weatherRes.json();
+
+      const currentDetails = getWeatherDetails(weatherData.current_weather.weathercode);
 
       setWeather({
         locationName: `${name}${admin1 ? `, ${admin1}` : ""}${
@@ -66,15 +79,20 @@ export default function Home() {
         }`,
         temp: weatherData.current_weather.temperature,
         windspeed: weatherData.current_weather.windspeed,
+        label: currentDetails.label,
+        icon: currentDetails.icon,
       });
 
-      // Map daily forecast data (next 5 days)
       if (weatherData.daily) {
-        const dailyList = weatherData.daily.time.slice(1, 6).map((dateStr: string, idx: number) => ({
-          date: new Date(dateStr).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
-          maxTemp: weatherData.daily.temperature_2m_max[idx + 1],
-          minTemp: weatherData.daily.temperature_2m_min[idx + 1],
-        }));
+        const dailyList = weatherData.daily.time.slice(1, 6).map((dateStr: string, idx: number) => {
+          const dayDetails = getWeatherDetails(weatherData.daily.weathercode[idx + 1]);
+          return {
+            date: new Date(dateStr).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+            maxTemp: weatherData.daily.temperature_2m_max[idx + 1],
+            minTemp: weatherData.daily.temperature_2m_min[idx + 1],
+            icon: dayDetails.icon,
+          };
+        });
         setForecast(dailyList);
       }
     } catch (err) {
@@ -87,7 +105,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6">
       <h1 className="text-3xl font-bold text-sky-400 mb-2">
-        Guruprasad weather app
+        Sushant's Weather App
       </h1>
       <p className="text-slate-400 text-sm mb-6">
         Built with Next.js, React Hooks & Tailwind CSS
@@ -117,7 +135,11 @@ export default function Home() {
         {weather && (
           <div className="text-center mt-4">
             <h2 className="text-xl font-semibold text-slate-200">{weather.locationName}</h2>
-            <div className="text-6xl font-extrabold text-sky-400 my-4">{weather.temp}°C</div>
+            <div className="my-3 flex items-center justify-center gap-2">
+              {weather.icon}
+              <span className="text-slate-300 font-medium">{weather.label}</span>
+            </div>
+            <div className="text-6xl font-extrabold text-sky-400 my-2">{weather.temp}°C</div>
             <p className="text-slate-400 text-sm mb-6">Wind Speed: {weather.windspeed} km/h</p>
 
             {forecast.length > 0 && (
@@ -125,10 +147,13 @@ export default function Home() {
                 <h3 className="text-sm font-semibold text-slate-300 mb-3 text-left">5-Day Forecast</h3>
                 <div className="grid grid-cols-5 gap-2">
                   {forecast.map((day, i) => (
-                    <div key={i} className="bg-slate-900 p-2 rounded-lg text-center border border-slate-700/50">
+                    <div key={i} className="bg-slate-900 p-2 rounded-lg text-center border border-slate-700/50 flex flex-col justify-between items-center min-h-[110px]">
                       <p className="text-[10px] text-slate-400 font-medium">{day.date}</p>
-                      <p className="text-sm font-bold text-sky-400 mt-1">{day.maxTemp}°</p>
-                      <p className="text-[11px] text-slate-500">{day.minTemp}°</p>
+                      <div className="my-1 scale-75">{day.icon}</div>
+                      <div>
+                        <p className="text-sm font-bold text-sky-400">{day.maxTemp}°</p>
+                        <p className="text-[11px] text-slate-500">{day.minTemp}°</p>
+                      </div>
                     </div>
                   ))}
                 </div>
